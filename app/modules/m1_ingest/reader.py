@@ -11,14 +11,18 @@ def read(raw):
     try:header=[s.strip().lstrip('\ufeff') for s in next(reader)]
     except (StopIteration,csv.Error):raise DomainError('HEADER','无法读取表头')
     if len(set(header))!=len(header) or not set(REQUIRED)<=set(header):raise DomainError('HEADER','表头缺失或重复')
-    out={'rows':[],'quarantine':[],'input_count':0,'blank_count':0,'header_count':0,'duplicate_count':0,'encoding':encoding}
+    out={'rows':[],'raw_reports':[],'quarantine':[],'input_count':0,'blank_count':0,'header_count':0,'duplicate_count':0,'encoding':encoding}
     try:
         for row in reader:
             out['input_count']+=1;line=reader.line_num
             if not row or not any(s.strip() for s in row):out['blank_count']+=1;continue
             if row==header:out['header_count']+=1;continue
-            if len(row)!=len(header):out['quarantine'].append({'line':line,'id':'','code':'WIDTH','raw':row});continue
+            # Every data row is retained verbatim for the archive, before any
+            # width check or downstream isolation, so no station report is lost.
+            out['raw_reports'].append({'line':line,'id':row[0] if row else '','raw':list(row),'width_ok':len(row)==len(header)})
+            if len(row)!=len(header):out['quarantine'].append({'line':line,'id':'','code':'WIDTH','stage':'m1_ingest','raw':row});continue
             item=dict(zip(header,row));item['_line']=line;item['_raw']=dict(item);out['rows'].append(item)
+            out['raw_reports'][-1].update({'id':item.get('id',''),'batch':item.get('batch',''),'sample_id':item.get('sample_id',''),'analyte':item.get('analyte',''),'station':item.get('station',''),'result':item.get('result',''),'unit':item.get('unit','')})
     except csv.Error as exc:raise DomainError('CSV',str(exc))
     if out['input_count']==0:raise DomainError('HEADER_ONLY','文件仅含表头')
     return out

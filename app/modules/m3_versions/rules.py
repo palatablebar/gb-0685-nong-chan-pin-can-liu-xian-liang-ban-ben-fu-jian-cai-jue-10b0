@@ -10,5 +10,5 @@ def apply(state):
             report=dict(r);report.update(choose(r,limits));reports.append(report)
         except DomainError as e:bad.append((r,e.code))
     lines={r['_line'] for r,_ in bad};state['rows']=[r for r in state['rows'] if r['_line'] not in lines]
-    for r,c in bad:state['quarantine'].append({'line':r['_line'],'id':r['id'],'code':c,'raw':r['_raw']})
+    for r,c in bad:state['quarantine'].append({'line':r['_line'],'id':r['id'],'code':c,'stage':'m3_versions','raw':r['_raw']})
     state['reports']=reports;return state

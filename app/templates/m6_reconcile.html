@@ -1,1 +1,92 @@
-{% extends "base.html" %}{% block content %}<div class="slips"><section class="panel wide"><header><h2>批次判级</h2><span>{{data.reconcile.grades|length}} 批</span></header><div class="grade-grid">{% for g in data.reconcile.grades %}<article><div><b>{{g.batch}}</b><span>{{g.samples}} 样本 / {{g.projects}} 项</span></div><strong class="grade {{g.code|lower}}">{{g.code}}</strong></article>{% endfor %}</div></section><section class="panel balance-slip"><header><h2>报告账</h2></header><dl>{% for k,l in [('input','输入'),('accepted','采纳'),('isolated','隔离'),('duplicates','重复'),('blank','空行'),('headers','表头')] %}<dt>{{l}}</dt><dd>{{data.reconcile[k]}}</dd>{% endfor %}</dl><div class="balance">{{'核对相符' if data.reconcile.balanced else '待复核'}}</div></section>{% include "quarantine_slip.html" %}</div>{% endblock %}
+{% extends "base.html" %}{% block content %}
+<div class="slips">
+  <section class="panel wide">
+    <header><h2>批次判级</h2><span>{{data.adjudication.batches|length}} 批</span></header>
+    <div class="grade-grid">
+      {% for g in data.adjudication.batches %}
+      <article class="batch-card {{g.verdict|lower}}">
+        <div><b>{{g.batch}}</b><span>{{g.samples}} 样本 / {{g.projects}} 项 / {{g.reports}} 份报告</span></div>
+        <strong class="grade {{g.code|lower}}">{{g.code}}</strong>
+        <span class="verdict-tag {{g.verdict|lower}}">{{g.verdict_label}}</span>
+        {% if g.provisional %}<ul class="basis">{% for b in g.basis %}<li>{{b}}</li>{% endfor %}</ul>{% endif %}
+        <small class="cid">结论号 {{g.conclusion_id}}</small>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel wide">
+    <header><h2>项目裁决</h2><span>可采信 {{data.adjudication.summary.adopt}} / 暂缓 {{data.adjudication.summary.hold}} / 补齐 {{data.adjudication.summary.supplement}}</span></header>
+    <div class="scroll"><table>
+      <thead><tr><th>批次</th><th>样本</th><th>项目</th><th>检测站结论</th><th>判定</th><th>采信结论</th><th>依据</th></tr></thead>
+      <tbody>{% for p in data.adjudication.projects %}
+      <tr>
+        <td>{{p.batch}}</td><td>{{p.sample_id}}</td><td>{{p.analyte}}</td>
+        <td>{% for s in p.stations %}<span class="station">{{s.station}}={{s.code}}</span>{% endfor %}{% for i in p.impaired %}<span class="station bad">{{i.station}}=隔离/{{i.code}}</span>{% endfor %}</td>
+        <td><span class="verdict {{p.code|lower}}">{{p.code}}</span></td>
+        <td><span class="verdict-tag {{p.verdict|lower}}">{{p.verdict_label}}</span></td>
+        <td class="basis-cell">{{p.basis}}</td>
+      </tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section class="panel verdict-slip">
+    <header><h2>本次出证裁决</h2><a class="mini-download" href="/api/runs/{{data.run_id}}/adjudication.csv">下载裁决</a></header>
+    <div class="certificate {{'allow' if data.adjudication.certificate.allowed else 'block'}}">
+      <strong>{{data.adjudication.certificate.verdict}}</strong>
+      <span>本次重算 · {{'可出具证书' if data.adjudication.certificate.allowed else '不得出具证书'}}</span>
+    </div>
+    <dl>
+      <dt>可采信批次</dt><dd>{{data.adjudication.certificate.adopt_batches|join('、') or '—'}}</dd>
+      <dt>暂缓批次</dt><dd>{{data.adjudication.certificate.hold_batches|join('、') or '—'}}</dd>
+      <dt>补齐批次</dt><dd>{{data.adjudication.certificate.supplement_batches|join('、') or '—'}}</dd>
+    </dl>
+    {% if data.adjudication.certificate.reasons %}<ul class="basis cert-reasons">{% for r in data.adjudication.certificate.reasons %}<li>{{r}}</li>{% endfor %}</ul>{% endif %}
+    {% set confirmed = conclusions|selectattr('effective')|list %}
+    {% if confirmed %}
+    <div class="effective-note">
+      <header>现行生效裁决（签字确认后有效，撤回或改判前不因重跑改变）</header>
+      <dl>{% for c in confirmed %}<dt>{{c.batch}}</dt><dd><span class="verdict {{c.code|lower}}">{{c.code}}</span> {{c.label}} <small class="mono">{{c.conclusion_id}}</small></dd>{% endfor %}</dl>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="panel balance-slip">
+    <header><h2>报告账</h2></header>
+    <dl>{% for k,l in [('input','输入'),('accepted','采纳'),('isolated','隔离'),('duplicates','重复'),('blank','空行'),('headers','表头')] %}<dt>{{l}}</dt><dd>{{data.reconcile[k]}}</dd>{% endfor %}</dl>
+    <div class="balance">{{'核对相符' if data.reconcile.balanced else '待复核'}}</div>
+  </section>
+
+  <section class="panel balance-slip">
+    <header><h2>证据对账</h2></header>
+    <dl>
+      <dt>业务项目</dt><dd>{{data.reconcile.evidence.business_total}}</dd>
+      <dt>计算证据</dt><dd>{{data.reconcile.evidence.calculations}}</dd>
+      <dt>站级报告</dt><dd>{{data.reconcile.evidence.station_reports_total}}</dd>
+      <dt>替代留档</dt><dd>{{data.reconcile.evidence.superseded}}</dd>
+      <dt>隔离留档</dt><dd>{{data.reconcile.evidence.isolated}}</dd>
+      <dt>原始报告行</dt><dd>{{data.reconcile.evidence.raw_reports}}</dd>
+      <dt>证据条数</dt><dd>{{data.reconcile.evidence.counted}}</dd>
+    </dl>
+    <div class="balance">{{'证据相符' if data.reconcile.evidence.reconciled and data.reconcile.grades_reconciled else '待补齐'}}</div>
+  </section>
+
+  <section class="panel wide">
+    <header><h2>已记录结论</h2><span>{{conclusions|length}} 条</span></header>
+    <div class="scroll"><table>
+      <thead><tr><th>批次</th><th>结论号</th><th>判定</th><th>采信</th><th>状态</th><th>生效</th><th>复核</th><th>替代</th></tr></thead>
+      <tbody>{% for c in conclusions %}
+      <tr class="{{'effective' if c.effective else ''}}">
+        <td>{{c.batch}}</td><td class="mono">{{c.conclusion_id}}</td>
+        <td><span class="verdict {{c.code|lower}}">{{c.code}}</span></td>
+        <td>{{c.label}}</td><td>{{c.state}}</td>
+        <td>{{'是' if c.effective else '否'}}</td><td>{{c.review_version}} / {{c.decision}}</td>
+        <td class="mono">{{c.supersedes or '—'}}</td>
+      </tr>
+      {% else %}<tr><td colspan="8">尚无已记录结论</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  {% include "quarantine_slip.html" %}
+</div>
+{% endblock %}

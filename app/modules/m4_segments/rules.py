@@ -28,5 +28,5 @@ def apply(state):
             m=dict(r);m.update(concentration(r['result'],r['unit'],r['lod'],r['limit']));measurements.append(m)
         except DomainError as e:bad.append((r,e.code))
     lines={r['_line'] for r,_ in bad};state['rows']=[r for r in state['rows'] if r['_line'] not in lines]
-    for r,c in bad:state['quarantine'].append({'line':r['_line'],'id':r['id'],'code':c,'raw':r['_raw']})
+    for r,c in bad:state['quarantine'].append({'line':r['_line'],'id':r['id'],'code':c,'stage':'m4_segments','raw':r['_raw']})
     state['measurements']=measurements;return state

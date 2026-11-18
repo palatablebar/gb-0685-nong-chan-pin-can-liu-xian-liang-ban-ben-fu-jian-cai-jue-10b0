@@ -1,1 +1,54 @@
-{% extends "base.html" %}{% block content %}<div class="slips"><section class="panel wide"><header><h2>报告归档</h2><span>{{history|length}} 份</span></header><div class="scroll"><table><thead><tr><th>归档号</th><th>版本</th><th>复核</th></tr></thead><tbody>{% for h in history %}<tr><td>{{h.id}}</td><td>{{h.version}}</td><td>{{h.decision}}</td></tr>{% endfor %}</tbody></table></div><div class="signature"><a href="/api/archive/{{run.run_id}}/export.csv">下载报告证据</a><button id="sign" data-id="{{run.run_id}}" data-version="{{run.review_version}}">签字复核</button></div></section><section class="panel archive-slip"><header><h2>校验签</h2></header><div class="fingerprint">{{data.archive.sha256}}</div><dl><dt>证据条数</dt><dd>{{data.archive.evidence_count}}</dd><dt>归档检查</dt><dd>{{'通过' if data.archive.ready else '待复核'}}</dd></dl></section>{% include "quarantine_slip.html" %}</div>{% endblock %}
+{% extends "base.html" %}{% block content %}
+<div class="slips">
+  <section class="panel wide">
+    <header><h2>报告归档</h2><span>{{history|length}} 份</span></header>
+    <div class="scroll"><table><thead><tr><th>归档号</th><th>版本</th><th>复核</th><th>本次出证</th></tr></thead>
+      <tbody>{% for h in history %}<tr><td>{{h.id}}</td><td>{{h.version}}</td><td>{{h.decision}}</td><td>—</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="signature"><a href="/api/archive/{{run.run_id}}/export.csv">下载报告证据</a><button id="sign" data-id="{{run.run_id}}" data-version="{{run.review_version}}">签字复核</button></div>
+  </section>
+
+  <section class="panel archive-slip">
+    <header><h2>校验签</h2></header>
+    <div class="fingerprint">{{data.archive.sha256}}</div>
+    <dl>
+      <dt>证据条数</dt><dd>{{data.archive.evidence_count}}</dd>
+      <dt>原始报告</dt><dd>{{data.archive.raw_reports}}</dd>
+      <dt>替代留档</dt><dd>{{data.archive.superseded}}</dd>
+      <dt>归档检查</dt><dd>{{'通过' if data.archive.ready else '待复核'}}</dd>
+      <dt>出证裁决</dt><dd>{{data.archive.certificate_verdict}}</dd>
+    </dl>
+  </section>
+
+  <section class="panel balance-slip">
+    <header><h2>证据对账</h2></header>
+    <dl>
+      <dt>业务项目</dt><dd>{{data.reconcile.evidence.business_total}}</dd>
+      <dt>计算证据</dt><dd>{{data.reconcile.evidence.calculations}}</dd>
+      <dt>站级报告合计</dt><dd>{{data.reconcile.evidence.station_reports_total}}</dd>
+      <dt>替代留档</dt><dd>{{data.reconcile.evidence.superseded}}</dd>
+      <dt>隔离留档</dt><dd>{{data.reconcile.evidence.isolated}}</dd>
+      <dt>原始报告行</dt><dd>{{data.reconcile.evidence.raw_reports}}</dd>
+      <dt>证据条数</dt><dd>{{data.reconcile.evidence.counted}}</dd>
+    </dl>
+    <div class="balance">{{'证据相符' if data.reconcile.evidence.archive_covered else '待补齐'}}</div>
+  </section>
+
+  <section class="panel wide">
+    <header><h2>原始报告留档</h2><span>{{data.raw_reports|length}} 份</span></header>
+    <div class="scroll"><table>
+      <thead><tr><th>行</th><th>报告ID</th><th>批次</th><th>样本</th><th>项目</th><th>检测站</th><th>结果</th><th>状态</th></tr></thead>
+      <tbody>
+        {% set adopted = [] %}{% for c in data.calculations %}{% set _ = adopted.append(c.id ~ '|' ~ c.station) %}{% endfor %}
+        {% for r in data.raw_reports %}<tr>
+          <td class="num">{{r.line}}</td><td>{{r.id or '—'}}</td><td>{{r.batch or '—'}}</td><td>{{r.sample_id or '—'}}</td><td>{{r.analyte or '—'}}</td>
+          <td>{{r.station or '—'}}</td><td class="num">{{r.result or '—'}} {{r.unit or ''}}</td>
+          <td>{{'采纳' if (r.id ~ '|' ~ (r.station or '')) in adopted else ('列错位留档' if not r.width_ok else '留档')}}</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  {% include "quarantine_slip.html" %}
+</div>
+{% endblock %}

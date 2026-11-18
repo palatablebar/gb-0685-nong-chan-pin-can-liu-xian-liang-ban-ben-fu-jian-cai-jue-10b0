@@ -35,6 +35,11 @@ def create_app():
         state=store.get(run_id)
         if not state.get('reconcile',{}).get('balanced'):raise DomainError('UNBALANCED','对账未平')
         return Response(bundle(state),mimetype='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename=evidence.csv'})
+    @app.get('/api/runs/<run_id>/adjudication.csv')
+    def download_adjudication(run_id):
+        from app.modules.m7_archive.export_out import adjudication_csv
+        state=store.get(run_id)
+        return Response(adjudication_csv(state),mimetype='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename=adjudication.csv'})
     with app.app_context():
         if not store.history():
             state=run(load('dirty.csv'),{});store.save(state['run_id'],state)

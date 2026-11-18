@@ -32,6 +32,10 @@
 | TRAP-15 | ug/kg与mg/kg | 差1000倍 | 浓度统一mg/kg | `app/modules/m4_segments/rules.py` | `tests/test_segments.py::test_unit_conversion` |
 | TRAP-25 | 标准时间边界 | 双版或错版 | 采样日半开区间选版 | `app/modules/m3_versions/standards.py` | `tests/test_versions.py::test_halfopen_effective` |
 | TRAP-20 | 复检引用环 | 遍历无法结束 | 引用路径检测 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_cycle_rejected` |
+| TRAP-27 | 两站异议 | 直接采信A站或全部压置 | 站级结论比对、仲裁优先、批次最严 | `app/modules/m6_reconcile/adjudicate.py` | `tests/test_adjudication.py` |
+| TRAP-28 | 两站同号报告 | 按id去重误判冲突 | 分站ID作用域 | `app/modules/m2_mapping/rules.py` | `tests/test_adjudication.py::test_same_id_two_stations_not_collapsed` |
+| TRAP-29 | 依据补齐中断 | 新结论覆盖旧确认 | 结论版本保留，旧版继续生效 | `app/store.py` | `tests/test_adjudication.py::test_confirmed_conclusion_survives_interrupted_supplement` |
+| TRAP-30 | 同源重跑 | 重复新增结论 | 内容散列结论号 | `app/store.py` | `tests/test_adjudication.py::test_conclusion_is_content_addressed_and_idempotent` |
 
 ## 对账规则
 
